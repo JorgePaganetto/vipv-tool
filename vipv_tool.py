@@ -469,32 +469,28 @@ with tab2:
         # ---- Modern Visualization 3: Financial Outlook ----
         st.subheader("Financial Outlook")
         
-        # Create yearly investment depreciation (straight-line over 10 years)
+        # Create timeline (0 to max_years)
         max_years = 10
         years = list(range(0, max_years + 1))  # Include year 0 to max_years
 
         # Cumulative savings grows each year
         savings = [annual_savings * year for year in years]
 
-        # Investment depreciates linearly to 0 over 10 years
-        investment = [max(0, total_cost - (total_cost/max_years)*year) for year in years]
+        # Investment remains constant (straight line)
+        investment = [total_cost] * len(years)
 
         profit_df = pd.DataFrame({
             'Year': years,
             'Cumulative Savings (€)': savings,
-            'Remaining Investment (€)': investment
+            'Investment (€)': investment
         })
 
-        # Find payback year (when savings >= investment)
-        payback_year = None
-        for year in years:
-            if savings[year] >= investment[year]:
-                payback_year = year
-                break
+        # Calculate payback year (when savings >= investment)
+        payback_year = next((year for year in years if savings[year] >= investment[year]), None)
 
-        fig3 = px.line(profit_df, x='Year', y=['Cumulative Savings (€)', 'Remaining Investment (€)'],
+        fig3 = px.line(profit_df, x='Year', y=['Cumulative Savings (€)', 'Investment (€)'],
                       title='<b>Investment Payback Timeline</b>',
-                      color_discrete_sequence=['#19D3F3', '#FF6692'],
+                      color_discrete_sequence=['#19D3F3', '#FF6692'],  # Blue for savings, red for investment
                       markers=True)
 
         if payback_year is not None:
@@ -505,7 +501,9 @@ with tab2:
                 y=payback_value,
                 text=f"Payback: {payback_year} years",
                 showarrow=True,
-                arrowhead=1
+                arrowhead=1,
+                ax=0,
+                ay=-40
             )
             # Add vertical line at payback point
             fig3.add_vline(x=payback_year, line_dash="dash", 
