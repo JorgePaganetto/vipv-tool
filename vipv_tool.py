@@ -1,3 +1,4 @@
+%%writefile vipv_tool.py
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -67,9 +68,103 @@ segments = {
             'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
         }
     },
-    # Add all other segments following the same structure
-    # ...
-    'Pick Up (Patrol)': {
+    'C-HB (Leaf)': {
+        'wltp': 13.0,
+        'city': 9.8,
+        'surfaces': {
+            'hood': {'area': 1.5, 'angle': surface_angles['hood']},
+            'roof': {'area': 2.0, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 0.6, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 0.8, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 0.7, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+        'C-SUV (Qashqai)': {
+        'wltp': 14.5,
+        'city': 10.9,
+        'surfaces': {
+            'hood': {'area': 1.6, 'angle': surface_angles['hood']},
+            'roof': {'area': 2.2, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 0.7, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 0.9, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 0.8, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+        'C-SUV+ (X-Trail)': {
+        'wltp': 15.0,
+        'city': 11.3,
+        'surfaces': {
+            'hood': {'area': 1.7, 'angle': surface_angles['hood']},
+            'roof': {'area': 2.4, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 0.8, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 1.0, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 0.9, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+        'D-SUV (X-Terra)': {
+        'wltp': 16.0,
+        'city': 12.0,
+        'surfaces': {
+            'hood': {'area': 1.8, 'angle': surface_angles['hood']},
+            'roof': {'area': 2.6, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 0.9, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 1.1, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 1.0, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+    'D-SDN (Altima)': {
+        'wltp': 13.5,
+        'city': 10.1,
+        'surfaces': {
+            'hood': {'area': 1.7, 'angle': surface_angles['hood']},
+            'roof': {'area': 2.3, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 0.7, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 0.9, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 0.8, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+    'E-SUV (Pathfinder)': {
+        'wltp': 17.0,
+        'city': 12.8,
+        'surfaces': {
+            'hood': {'area': 2.0, 'angle': surface_angles['hood']},
+            'roof': {'area': 2.8, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 1.0, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 1.2, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 1.1, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+    'F-SUV (Patrol)': {
+        'wltp': 18.0,
+        'city': 13.5,
+        'surfaces': {
+            'hood': {'area': 2.2, 'angle': surface_angles['hood']},
+            'roof': {'area': 3.0, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 1.1, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 1.3, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 1.2, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+    'Mid-VAN (NV200)': {
+        'wltp': 18.0,
+        'city': 13.5,
+        'surfaces': {
+            'hood': {'area': 1.8, 'angle': surface_angles['hood']},
+            'roof': {'area': 3.2, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 1.0, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 1.4, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 1.0, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+    'Pick Up (Navara)': {
         'wltp': 20.0,
         'city': 15.0,
         'surfaces': {
@@ -85,8 +180,8 @@ segments = {
 
 # Default values
 default_utilization = 90
-default_pv_efficiency = 30
-default_cost = 250
+default_pv_efficiency = 25
+default_cost = 350
 default_transformation_efficiency = 90
 
 # Streamlit app
@@ -106,7 +201,11 @@ with tab1:
         region = st.selectbox("Select Region", cities, index=cities.index('Dubai'))
         avg_irradiation = np.mean(irradiation_data[region])
         st.metric("Average Daily Irradiation", f"{avg_irradiation:.2f} kWh/m²/day")
-
+        st.divider()
+        st.metric("Default Electricity Price", f"{energy_cost[region]:.2f} €/kWh")
+        electricity_price = st.slider("Adjust Electricity Price (€/kWh)",
+                            min_value=0.01, max_value=1.0,
+                            value=energy_cost[region], step=0.01)
     with col2:
         # Segment selection
         segment = st.selectbox("Select Segment", list(segments.keys()))
@@ -116,6 +215,17 @@ with tab1:
             st.metric("WLTP Efficiency", f"{segment_data['wltp']} kWh/100km")
         with col2b:
             st.metric("City Efficiency", f"{segment_data['city']} kWh/100km")
+  # NEW: Nissan Business Parameters
+    st.subheader("Business Parameters")
+    col3, col4 = st.columns(2)
+    with col3:
+        nissan_margin = st.slider("Nissan Margin (%)",
+                                 min_value=0, max_value=50,
+                                 value=20, step=1)
+    with col4:
+        nissan_volume = st.slider("Nissan Volume (units)",
+                                 min_value=1, max_value=5000,
+                                 value=500, step=10)
 
     st.subheader("PV Surface Configuration")
 
@@ -235,26 +345,29 @@ with tab2:
             avg_efficiency = 0
 
         # Calculate ranges
-        wltp_range = (total_daily_energy / (segment_data['wltp'] / 100)) * 100  # Convert to km
-        city_range = (total_daily_energy / (segment_data['city'] / 100)) * 100
+        wltp_range = (total_daily_energy / (segment_data['wltp'] / 100))  # Convert to km
+        city_range = (total_daily_energy / (segment_data['city'] / 100))
 
         # Calculate monthly ranges
-        monthly_wltp_range = {month: (energy / (segment_data['wltp'] / 100)) * 100 for month, energy in monthly_energy.items()}
-        monthly_city_range = {month: (energy / (segment_data['city'] / 100)) * 100 for month, energy in monthly_energy.items()}
+        monthly_wltp_range = {month: (energy / (segment_data['wltp'] / 100)) for month, energy in monthly_energy.items()}
+        monthly_city_range = {month: (energy / (segment_data['city'] / 100)) for month, energy in monthly_energy.items()}
 
         # Calculate annual savings and payback period (corrected calculation)
         annual_energy_kwh = sum(monthly_energy.values()) * 30.44  # Average days per month
         annual_savings = annual_energy_kwh * energy_cost[region]  # Now in EUR
         payback_period = total_cost / annual_savings if annual_savings > 0 else float('inf')
 
+        # NEW: Calculate Nissan Annual Profit (in k€)
+        nissan_profit = (total_cost * (nissan_margin/100) * nissan_volume) / 1000
+
         # Display results
         st.subheader("Feasibility Study Summary")
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)  # Changed to 4 columns
         with col1:
             st.metric("Total Area", f"{total_area:.2f} m²")
             st.metric("Average Efficiency", f"{avg_efficiency:.1f}%")
-            st.metric("Avg. Daily Output", f"{total_daily_energy:.0f} Wh")
+            st.metric("Avg. Daily Output", f"{total_daily_energy:.0f} kWh")
 
         with col2:
             st.metric("Avg. Daily Range (WLTP)", f"{wltp_range:.1f} km")
@@ -265,6 +378,11 @@ with tab2:
             st.metric("Total Investment", f"{total_cost:.0f} €")
             st.metric("Annual Savings", f"{annual_savings:.0f} €")
             st.metric("Payback Period", f"{payback_period:.1f} years" if not np.isinf(payback_period) else "∞")
+        # NEW: Nissan Profit Metric
+        with col4:
+            st.metric("Nissan Volume", f"{nissan_volume} units")
+            st.metric("Nissan Margin", f"{nissan_margin}%")
+            st.metric("Nissan Annual Profit", f"{nissan_profit:.1f} k€")
 
         # Create visualizations
         st.subheader("Energy Analysis")
