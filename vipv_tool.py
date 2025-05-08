@@ -1,0 +1,344 @@
+import streamlit as st
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+
+# Data setup
+cities = ['Barcelona', 'Berlin', 'Cairo', 'Delhi', 'Dubai', 'London', 'Madrid', 'Melbourne',
+          'Milan', 'Mumbai', 'Paris', 'Riyadh', 'Rome', 'Seville', 'Sydney']
+
+irradiation_data = {
+    'Barcelona': [2.874, 3.471, 4.099, 4.810, 4.693, 4.040, 3.925, 4.428, 4.074, 4.303, 3.671, 3.514],
+    'Berlin': [1.073, 1.826, 2.670, 3.808, 4.213, 4.194, 3.986, 3.641, 2.953, 1.989, 1.141, 0.895],
+    'Cairo': [3.914, 4.258, 5.054, 5.361, 6.451, 7.358, 7.315, 6.912, 5.996, 4.966, 4.310, 4.056],
+    'Delhi': [2.576, 3.838, 4.603, 4.585, 3.548, 2.612, 1.772, 2.253, 3.329, 3.542, 2.941, 2.777],
+    'Dubai': [4.834, 4.974, 5.070, 5.252, 5.949, 5.514, 4.190, 4.635, 5.433, 5.802, 5.344, 4.864],
+    'London': [1.176, 1.737, 2.352, 3.256, 3.526, 3.593, 3.573, 3.064, 2.607, 1.954, 1.428, 1.064],
+    'Madrid': [3.704, 4.525, 5.242, 5.511, 6.142, 7.491, 8.500, 7.425, 5.857, 4.480, 3.655, 3.402],
+    'Melbourne': [6.580, 5.668, 4.857, 3.693, 2.986, 2.773, 2.972, 3.319, 4.031, 4.623, 5.091, 6.353],
+    'Milan': [2.635, 3.396, 4.420, 4.460, 4.728, 5.330, 5.985, 5.173, 4.086, 2.714, 2.152, 2.237],
+    'Mumbai': [5.214, 5.825, 5.751, 5.452, 5.007, 2.252, 0.998, 1.334, 2.354, 3.715, 4.569, 4.731],
+    'Paris': [1.328, 2.019, 2.920, 3.821, 3.976, 4.282, 4.232, 3.896, 3.403, 2.234, 1.529, 1.248],
+    'Riyadh': [5.141, 5.311, 5.202, 4.573, 5.170, 6.239, 6.083, 6.031, 6.529, 6.915, 5.467, 5.411],
+    'Rome': [2.962, 3.733, 4.265, 4.617, 5.579, 6.603, 7.287, 6.349, 4.658, 3.653, 2.765, 2.786],
+    'Seville': [4.053, 4.632, 5.309, 5.756, 6.520, 7.627, 8.230, 7.352, 5.874, 4.639, 4.176, 3.834],
+    'Sydney': [5.378, 4.621, 4.608, 4.568, 4.747, 3.643, 4.762, 5.327, 5.719, 5.373, 5.053, 5.229]
+}
+
+energy_cost = {
+    'Barcelona': 0.25, 'Berlin': 0.35, 'Cairo': 0.10, 'Delhi': 0.08, 'Dubai': 0.12,
+    'London': 0.30, 'Madrid': 0.22, 'Melbourne': 0.20, 'Milan': 0.28, 'Mumbai': 0.09,
+    'Paris': 0.32, 'Riyadh': 0.11, 'Rome': 0.26, 'Seville': 0.21, 'Sydney': 0.19
+}
+
+# Realistic angle data for each surface type (in degrees)
+surface_angles = {
+    'hood': 15,    # Hoods are typically slightly angled
+    'roof': 5,     # Roofs are nearly flat
+    'rear_window': 45,  # Rear windows are steeply angled
+    'rear_side_window': 30,  # Rear side windows
+    'front_side_window': 25,  # Front side windows
+    'canopy': 0     # Canopies are typically flat
+}
+
+segments = {
+    'B-HB (Micra)': {
+        'wltp': 12.5,
+        'city': 9.4,
+        'surfaces': {
+            'hood': {'area': 1.2, 'angle': surface_angles['hood']},
+            'roof': {'area': 1.5, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 0.4, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 0.6, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 0.5, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+    'B-SUV (Juke)': {
+        'wltp': 13.5,
+        'city': 10.1,
+        'surfaces': {
+            'hood': {'area': 1.4, 'angle': surface_angles['hood']},
+            'roof': {'area': 1.8, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 0.5, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 0.7, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 0.6, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+    # Add all other segments following the same structure
+    # ...
+    'Pick Up (Patrol)': {
+        'wltp': 20.0,
+        'city': 15.0,
+        'surfaces': {
+            'hood': {'area': 2.0, 'angle': surface_angles['hood']},
+            'roof': {'area': 2.5, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 0.8, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 1.0, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 0.9, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 4.0, 'angle': surface_angles['canopy'], 'default': True}
+        }
+    }
+}
+
+# Default values
+default_utilization = 90
+default_pv_efficiency = 30
+default_cost = 250
+default_transformation_efficiency = 90
+
+# Streamlit app
+st.set_page_config(layout="wide", page_title="VIPV Evaluation Tool")
+st.title("VIPV Evaluation Tool")
+
+# Create tabs
+tab1, tab2 = st.tabs(["Assumptions", "Visualization"])
+
+with tab1:
+    st.header("Assumptions")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        # Region selection
+        region = st.selectbox("Select Region", cities, index=cities.index('Dubai'))
+        avg_irradiation = np.mean(irradiation_data[region])
+        st.metric("Average Daily Irradiation", f"{avg_irradiation:.2f} kWh/m²/day")
+
+    with col2:
+        # Segment selection
+        segment = st.selectbox("Select Segment", list(segments.keys()))
+        segment_data = segments[segment]
+        col2a, col2b = st.columns(2)
+        with col2a:
+            st.metric("WLTP Efficiency", f"{segment_data['wltp']} kWh/100km")
+        with col2b:
+            st.metric("City Efficiency", f"{segment_data['city']} kWh/100km")
+
+    st.subheader("PV Surface Configuration")
+
+    # Create checkboxes and sliders for each surface
+    surfaces_config = {}
+    cols = st.columns(3)
+
+    for i, (surface_name, surface_data) in enumerate(segment_data['surfaces'].items()):
+        with cols[i % 3]:
+            display_name = surface_name.replace('_', ' ').title()
+            include = st.checkbox(f"Include {display_name}",
+                                 value=surface_data.get('default', True),
+                                 key=f"include_{surface_name}")
+
+            if include:
+                area = st.number_input(f"{display_name} Area (m²)",
+                                      min_value=0.0,
+                                      value=surface_data['area'],
+                                      step=0.1,
+                                      key=f"area_{surface_name}")
+
+                utilization = st.slider(f"{display_name} Utilization (%)",
+                                       min_value=0, max_value=100,
+                                       value=default_utilization,
+                                       key=f"util_{surface_name}")
+
+                angle = st.slider(f"{display_name} Angle (°)",
+                                 min_value=0, max_value=90,
+                                 value=surface_data['angle'],
+                                 key=f"angle_{surface_name}")
+
+                efficiency = st.slider(f"{display_name} PV Efficiency (%)",
+                                      min_value=0, max_value=100,
+                                      value=default_pv_efficiency,
+                                      key=f"eff_{surface_name}")
+
+                cost = st.number_input(f"{display_name} Cost (€/m²)",
+                                      min_value=0,
+                                      value=default_cost,
+                                      key=f"cost_{surface_name}")
+
+                surfaces_config[surface_name] = {
+                    'area': area,
+                    'utilization': utilization,
+                    'angle': angle,
+                    'efficiency': efficiency,
+                    'cost': cost,
+                    'include': True
+                }
+            else:
+                surfaces_config[surface_name] = {'include': False}
+
+    # Other parameters
+    st.subheader("Other Parameters")
+    transformation_efficiency = st.slider("Energy Transformation Efficiency (%)",
+                                         min_value=0, max_value=100,
+                                         value=default_transformation_efficiency)
+
+with tab2:
+    st.header("Visualization")
+
+    # Calculate results when visualization tab is selected
+    if st.button("Calculate Results", type="primary"):
+        # Calculate PV energy production for each surface
+        total_area = 0
+        total_daily_energy = 0
+        total_cost = 0
+        monthly_energy = {month: 0 for month in ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']}
+        surfaces_results = []
+
+        for surface_name, config in surfaces_config.items():
+            if config.get('include', False):
+                # Calculate for each month
+                monthly_surface_energy = []
+                for month_idx, month in enumerate(monthly_energy.keys()):
+                    # Adjust irradiation by angle (simple cosine correction)
+                    angle_rad = np.radians(config['angle'])
+                    effective_irradiation = irradiation_data[region][month_idx] * np.cos(angle_rad)
+
+                    # Calculate energy for this month
+                    area = config['area'] * (config['utilization']/100)
+                    energy = area * effective_irradiation * (config['efficiency']/100) * (transformation_efficiency/100)
+
+                    # For side windows, multiply by 2 (left and right)
+                    if 'side' in surface_name:
+                        energy *= 2
+
+                    monthly_surface_energy.append(energy)
+                    monthly_energy[month] += energy
+
+                # Calculate average daily energy
+                avg_daily_energy = np.mean(monthly_surface_energy)
+
+                # Calculate cost (not multiplied for side windows - cost is per panel)
+                cost = config['area'] * config['cost']
+                if 'side' in surface_name:
+                    cost *= 2
+
+                surfaces_results.append({
+                    'name': surface_name.replace('_', ' ').title(),
+                    'area': config['area'],
+                    'effective_area': config['area'] * (config['utilization']/100),
+                    'avg_daily_energy': avg_daily_energy,
+                    'monthly_energy': monthly_surface_energy,
+                    'cost': cost
+                })
+
+                total_area += config['area'] * (config['utilization']/100) * (2 if 'side' in surface_name else 1)
+                total_daily_energy += avg_daily_energy
+                total_cost += cost
+
+        # Calculate average efficiency
+        if total_area > 0:
+            avg_efficiency = (total_daily_energy / (total_area * avg_irradiation * (transformation_efficiency/100))) * 100
+        else:
+            avg_efficiency = 0
+
+        # Calculate ranges
+        wltp_range = (total_daily_energy / (segment_data['wltp'] / 100)) * 100  # Convert to km
+        city_range = (total_daily_energy / (segment_data['city'] / 100)) * 100
+
+        # Calculate monthly ranges
+        monthly_wltp_range = {month: (energy / (segment_data['wltp'] / 100)) * 100 for month, energy in monthly_energy.items()}
+        monthly_city_range = {month: (energy / (segment_data['city'] / 100)) * 100 for month, energy in monthly_energy.items()}
+
+        # Calculate annual savings and payback period (corrected calculation)
+        annual_energy_kwh = sum(monthly_energy.values()) * 30.44  # Average days per month
+        annual_savings = annual_energy_kwh * energy_cost[region]  # Now in EUR
+        payback_period = total_cost / annual_savings if annual_savings > 0 else float('inf')
+
+        # Display results
+        st.subheader("Feasibility Study Summary")
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Area", f"{total_area:.2f} m²")
+            st.metric("Average Efficiency", f"{avg_efficiency:.1f}%")
+            st.metric("Avg. Daily Output", f"{total_daily_energy:.0f} Wh")
+
+        with col2:
+            st.metric("Avg. Daily Range (WLTP)", f"{wltp_range:.1f} km")
+            st.metric("Avg. Daily Range (City)", f"{city_range:.1f} km")
+            st.metric("Annual Energy Production", f"{annual_energy_kwh:.0f} kWh")
+
+        with col3:
+            st.metric("Total Investment", f"{total_cost:.0f} €")
+            st.metric("Annual Savings", f"{annual_savings:.0f} €")
+            st.metric("Payback Period", f"{payback_period:.1f} years" if not np.isinf(payback_period) else "∞")
+
+        # Create visualizations
+        st.subheader("Energy Analysis")
+
+        # Monthly Irradiation and Energy Gain
+        fig1, ax1 = plt.subplots(figsize=(10, 5))
+        months = list(monthly_energy.keys())
+
+        # Plot irradiation
+        ax1.plot(months, irradiation_data[region], 'o-', color='orange', label='Solar Irradiation')
+        ax1.set_ylabel('Irradiation (kWh/m²/day)', color='orange')
+        ax1.tick_params(axis='y', labelcolor='orange')
+        ax1.set_title('Monthly Solar Irradiation and Energy Gain')
+
+        # Plot energy gain on second axis
+        ax2 = ax1.twinx()
+        ax2.plot(months, [e*1000 for e in monthly_energy.values()], 's-', color='blue', label='Energy Gain')
+        ax2.set_ylabel('Energy Gain (Wh/day)', color='blue')
+        ax2.tick_params(axis='y', labelcolor='blue')
+
+        # Add legend
+        lines1, labels1 = ax1.get_legend_handles_labels()
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
+
+        st.pyplot(fig1)
+
+        # Monthly Range Gain
+        fig2, ax = plt.subplots(figsize=(10, 5))
+        width = 0.35
+        x = range(len(months))
+
+        ax.bar(x, monthly_wltp_range.values(), width, label='WLTP Range')
+        ax.bar([p + width for p in x], monthly_city_range.values(), width, label='City Range')
+
+        ax.set_xlabel('Month')
+        ax.set_ylabel('Daily Range Gain (km)')
+        ax.set_title('Monthly Range Gain')
+        ax.set_xticks([p + width/2 for p in x])
+        ax.set_xticklabels(months)
+        ax.legend()
+
+        st.pyplot(fig2)
+
+        # Energy Contribution by Surface
+        if surfaces_results:
+            fig3, ax = plt.subplots(figsize=(8, 8))
+            surface_names = [s['name'] for s in surfaces_results]
+            surface_energies = [s['avg_daily_energy'] for s in surfaces_results]
+
+            ax.pie(surface_energies, labels=surface_names, autopct='%1.1f%%',
+                  startangle=90, textprops={'fontsize': 10})
+            ax.set_title('Energy Contribution by Surface')
+
+            st.pyplot(fig3)
+
+        # Investment vs Savings
+        fig4, ax = plt.subplots(figsize=(10, 5))
+        years = np.arange(0, min(10, max(3, int(payback_period + 1))))
+        savings = annual_savings * years
+        investment = np.full_like(years, total_cost)
+
+        ax.plot(years, savings, 'g-', label='Cumulative Savings', linewidth=2)
+        ax.plot(years, investment, 'r-', label='Investment', linewidth=2)
+
+        if not np.isinf(payback_period):
+            ax.axvline(x=payback_period, color='gray', linestyle='--')
+            ax.text(payback_period + 0.1, min(max(savings), max(investment))/2,
+                   f'Payback: {payback_period:.1f} years', rotation=90, va='center')
+
+        ax.set_xlabel('Years')
+        ax.set_ylabel('EUR')
+        ax.set_title('Investment vs Savings Over Time')
+        ax.legend()
+        ax.grid(True, linestyle='--', alpha=0.7)
+
+        st.pyplot(fig4)
