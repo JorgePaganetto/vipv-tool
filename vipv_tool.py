@@ -2,7 +2,12 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import plotly.express as px
 from matplotlib.ticker import MaxNLocator
+
+plt.style.use('seaborn-v0_8-darkgrid')
+COLOR_PALETTE = ["#4C78A8", "#F58518", "#E45756", "#72B7B2", "#54A24B"]
+plt.rcParams['axes.prop_cycle'] = plt.cycler(color=COLOR_PALETTE)
 
 # Data setup
 cities = ['Barcelona', 'Berlin', 'Cairo', 'Delhi', 'Dubai', 'London', 'Madrid', 'Melbourne',
@@ -284,10 +289,9 @@ with tab1:
                                          value=default_transformation_efficiency)
 
 with tab2:
-    st.header("Visualization")
-
-    # Calculate results when visualization tab is selected
-    if st.button("Calculate Results", type="primary"):
+    st.header("Premium Analysis")
+    
+    if st.button("Calculate Results", type="primary", use_container_width=True):
         # Calculate PV energy production for each surface
         total_area = 0
         total_daily_energy = 0
@@ -383,79 +387,90 @@ with tab2:
             st.metric("Nissan Margin", f"{nissan_margin}%")
             st.metric("Nissan Annual Profit", f"{nissan_profit:.1f} k€")
 
-        # Create visualizations
-        st.subheader("Energy Analysis")
-
-        # Monthly Irradiation and Energy Gain
-        fig1, ax1 = plt.subplots(figsize=(10, 5))
-        months = list(monthly_energy.keys())
-
-        # Plot irradiation
-        ax1.plot(months, irradiation_data[region], 'o-', color='orange', label='Solar Irradiation')
-        ax1.set_ylabel('Irradiation (kWh/m²/day)', color='orange')
-        ax1.tick_params(axis='y', labelcolor='orange')
-        ax1.set_title('Monthly Solar Irradiation and Energy Gain')
-
-        # Plot energy gain on second axis
-        ax2 = ax1.twinx()
-        ax2.plot(months, [e*1000 for e in monthly_energy.values()], 's-', color='blue', label='Energy Gain')
-        ax2.set_ylabel('Energy Gain (Wh/day)', color='blue')
-        ax2.tick_params(axis='y', labelcolor='blue')
-
-        # Add legend
-        lines1, labels1 = ax1.get_legend_handles_labels()
-        lines2, labels2 = ax2.get_legend_handles_labels()
-        ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
-
-        st.pyplot(fig1)
-
-        # Monthly Range Gain
-        fig2, ax = plt.subplots(figsize=(10, 5))
-        width = 0.35
-        x = range(len(months))
-
-        ax.bar(x, monthly_wltp_range.values(), width, label='WLTP Range')
-        ax.bar([p + width for p in x], monthly_city_range.values(), width, label='City Range')
-
-        ax.set_xlabel('Month')
-        ax.set_ylabel('Daily Range Gain (km)')
-        ax.set_title('Monthly Range Gain')
-        ax.set_xticks([p + width/2 for p in x])
-        ax.set_xticklabels(months)
-        ax.legend()
-
-        st.pyplot(fig2)
-
-        # Energy Contribution by Surface
-        if surfaces_results:
-            fig3, ax = plt.subplots(figsize=(8, 8))
-            surface_names = [s['name'] for s in surfaces_results]
-            surface_energies = [s['avg_daily_energy'] for s in surfaces_results]
-
-            ax.pie(surface_energies, labels=surface_names, autopct='%1.1f%%',
-                  startangle=90, textprops={'fontsize': 10})
-            ax.set_title('Energy Contribution by Surface')
-
-            st.pyplot(fig3)
-
-        # Investment vs Savings
-        fig4, ax = plt.subplots(figsize=(10, 5))
-        years = np.arange(0, min(10, max(3, int(payback_period + 1))))
-        savings = annual_savings * years
-        investment = np.full_like(years, total_cost)
-
-        ax.plot(years, savings, 'g-', label='Cumulative Savings', linewidth=2)
-        ax.plot(years, investment, 'r-', label='Investment', linewidth=2)
-
+         # ---- Modern Visualization 1: Dual-Axis Energy Chart ----
+        st.subheader("Solar Performance")
+        fig1, ax1 = plt.subplots(figsize=(10, 5), facecolor='none')
+        
+        # Convert monthly data to DataFrame for Plotly
+        monthly_df = pd.DataFrame({
+            'Month': list(monthly_energy.keys()),
+            'Irradiation': irradiation_data[region],
+            'Energy Gain': [e*1000 for e in monthly_energy.values()],
+            'WLTP Range': list(monthly_wltp_range.values()),
+            'City Range': list(monthly_city_range.values())
+        })
+        
+        # Interactive Plotly chart
+        fig_plotly = px.line(monthly_df, x='Month', y=['Irradiation', 'Energy Gain'],
+                            title='<b>Monthly Solar Performance</b>',
+                            labels={'value': 'Energy (kWh/m²/day | Wh/day)', 'variable': 'Metric'},
+                            color_discrete_sequence=['#FFA15A', '#636EFA'],
+                            template='plotly_white')
+        
+        fig_plotly.update_layout(
+            hovermode="x unified",
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(family="Arial", size=12)
+        )
+        st.plotly_chart(fig_plotly, use_container_width=True)
+        
+        # ---- Modern Visualization 2: Range Gain Bars ----
+        st.subheader("Driving Range Enhancement")
+        fig2 = px.bar(monthly_df, x='Month', y=['WLTP Range', 'City Range'],
+                      barmode='group',
+                      title='<b>Additional Daily Driving Range</b>',
+                      labels={'value': 'Kilometers', 'variable': 'Cycle'},
+                      color_discrete_sequence=['#00CC96', '#AB63FA'])
+        
+        fig2.update_layout(
+            hovermode="x unified",
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(family="Arial", size=12)
+        )
+        st.plotly_chart(fig2, use_container_width=True)
+        
+        # ---- Modern Visualization 3: Profit Timeline ----
+        st.subheader("Financial Outlook")
+        profit_df = pd.DataFrame({
+            'Year': years,
+            'Cumulative Savings (€)': savings,
+            'Investment (€)': investment
+        })
+        
+        fig3 = px.area(profit_df, x='Year', y=['Cumulative Savings (€)', 'Investment (€)'],
+                       title='<b>Investment Payback Timeline</b>',
+                       color_discrete_sequence=['#19D3F3', '#FF6692'])
+        
         if not np.isinf(payback_period):
-            ax.axvline(x=payback_period, color='gray', linestyle='--')
-            ax.text(payback_period + 0.1, min(max(savings), max(investment))/2,
-                   f'Payback: {payback_period:.1f} years', rotation=90, va='center')
-
-        ax.set_xlabel('Years')
-        ax.set_ylabel('EUR')
-        ax.set_title('Investment vs Savings Over Time')
-        ax.legend()
-        ax.grid(True, linestyle='--', alpha=0.7)
-
-        st.pyplot(fig4)
+            fig3.add_vline(x=payback_period, line_dash="dash", 
+                          line_color="gray", annotation_text=f"Payback: {payback_period:.1f} years")
+        
+        fig3.update_layout(
+            hovermode="x unified",
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(family="Arial", size=12),
+            yaxis_title="Euros (€)"
+        )
+        st.plotly_chart(fig3, use_container_width=True)
+        
+        # ---- Modern Visualization 4: Surface Contribution ----
+        st.subheader("PV Surface Contribution")
+        if surfaces_results:
+            contrib_df = pd.DataFrame({
+                'Surface': [s['name'] for s in surfaces_results],
+                'Contribution (%)': [s['avg_daily_energy']/total_daily_energy*100 for s in surfaces_results],
+                'Area (m²)': [s['effective_area'] for s in surfaces_results]
+            })
+            
+            fig4 = px.sunburst(contrib_df, path=['Surface'], values='Contribution (%)',
+                              color='Area (m²)', color_continuous_scale='Blues',
+                              title='<b>Energy Contribution by Surface Area</b>')
+            
+            fig4.update_layout(
+                margin=dict(t=40, l=0, r=0, b=0),
+                font=dict(family="Arial", size=12)
+            )
+            st.plotly_chart(fig4, use_container_width=True)
