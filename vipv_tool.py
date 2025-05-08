@@ -437,22 +437,29 @@ fig.update_traces(
 st.plotly_chart(fig, use_container_width=True)
         
         # ---- Modern Visualization 2: Range Gain Bars ----
-        st.subheader("Driving Range Enhancement")
+        st.subheader("Driving Range Enhancement")  # This was line 440
+        monthly_df = pd.DataFrame({
+            'Month': list(monthly_energy.keys()),
+            'WLTP Range': list(monthly_wltp_range.values()),
+            'City Range': list(monthly_city_range.values())
+        })
+        
         fig2 = px.bar(monthly_df, x='Month', y=['WLTP Range', 'City Range'],
-                      barmode='group',
-                      title='<b>Additional Daily Driving Range</b>',
-                      labels={'value': 'Kilometers', 'variable': 'Cycle'},
-                      color_discrete_sequence=['#00CC96', '#AB63FA'])
+                     barmode='group',
+                     title='<b>Additional Daily Driving Range</b>',
+                     labels={'value': 'Kilometers', 'variable': 'Cycle'},
+                     color_discrete_sequence=['#00CC96', '#AB63FA'])
         
         fig2.update_layout(
             hovermode="x unified",
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(family="Arial", size=12)
+            font=dict(family="Arial", size=12),
+            yaxis_tickformat=".1f"  # Show 1 decimal place
         )
         st.plotly_chart(fig2, use_container_width=True)
         
-        # ---- Modern Visualization 3: Profit Timeline ----
+        # ---- Modern Visualization 3: Financial Outlook ----
         st.subheader("Financial Outlook")
         
         # Robust year calculation
