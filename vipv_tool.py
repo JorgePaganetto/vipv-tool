@@ -448,53 +448,94 @@ with tab2:
                      title='<b>Additional Daily Driving Range</b>',
                      labels={'value': 'Kilometers', 'variable': 'Cycle'},
                      color_discrete_sequence=['#00CC96', '#AB63FA'])
-        
-        fig2.update_layout(
-            hovermode="x unified",
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(family="Arial", size=12),
-            yaxis_tickformat=".1f"  # Show 1 decimal place
-        )
-        st.plotly_chart(fig2, use_container_width=True)
+        # Set y-axis ticks to increment by 5km
+max_range = max(max(monthly_wltp_range.values()), max(monthly_city_range.values()))
+fig2.update_layout(
+    hovermode="x unified",
+    plot_bgcolor='rgba(0,0,0,0)',
+    paper_bgcolor='rgba(0,0,0,0)',
+    font=dict(family="Arial", size=12),
+    yaxis=dict(
+        tickformat=".1f",
+        tickmode='linear',
+        tick0=0,
+        dtick=5,  # Show ticks every 5km
+        range=[0, max_range * 1.1]  # 10% padding
+    )
+)
+st.plotly_chart(fig2, use_container_width=True)
         
         # ---- Modern Visualization 3: Financial Outlook ----
         st.subheader("Financial Outlook")
         
-        # Robust year calculation
-        max_years = 10
-        if not np.isinf(payback_period):
-            years = list(range(0, min(max_years, int(payback_period) + 2)))
-        else:
-            years = list(range(0, max_years))
-            
-        savings = [annual_savings * year for year in years]
-        investment = [total_cost] * len(years)
+# Create yearly investment depreciation (straight-line over 10 years)
+max_years = 10
+years = list(range(0, max_years + 1))  # Include year 0 to max_years
 
-        profit_df = pd.DataFrame({
-            'Year': years,
-            'Cumulative Savings (€)': savings,
-            'Investment (€)': investment
-        })
+# Cumulative savings grows each year
+savings = [annual_savings * year for year in years]
 
-        fig3 = px.area(profit_df, x='Year', y=['Cumulative Savings (€)', 'Investment (€)'],
-                      title='<b>Investment Payback Timeline</b>',
-                      color_discrete_sequence=['#19D3F3', '#FF6692'])
+# Investment depreciates linearly to 0 over 10 years
+investment = [max(0, total_cost - (total_cost/max_years)*year) for year in years]
 
-        if not np.isinf(payback_period) and payback_period <= max_years:
-            fig3.add_vline(x=payback_period, line_dash="dash", 
-                          line_color="gray", annotation_text=f"Payback: {payback_period:.1f} years",
-                          annotation_position="top left")
+profit_df = pd.DataFrame({
+    'Year': years,
+    'Cumulative Savings (€)': savings,
+    'Remaining Investment (€)': investment
+})
 
-        fig3.update_layout(
-            hovermode="x unified",
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(family="Arial", size=12),
-            yaxis_title="Euros (€)",
-            xaxis=dict(tickmode='linear', tick0=0, dtick=1)
-        )
-        st.plotly_chart(fig3, use_container_width=True)
+# Find payback year (when savings >= investment)
+payback_year = None
+for year in years:
+    if savings[year] >= investment[year]:
+        payback_year = year
+        break
+
+fig3 = px.line(profit_df, x='Year', y=['Cumulative Savings (€)', 'Remaining Investment (€)'],
+              title='<b>Investment Payback Timeline</b>',
+              color_discrete_sequence=['#19D3F3', '#FF6692'],
+              markers=True)
+
+if payback_year is not None:
+    # Add payback point marker
+    payback_value = savings[payback_year]
+    fig3.add_annotation(
+        x=payback_year,
+        y=payback_value,
+        text=f"Payback: {payback_year} years",
+        showarrow=True,
+        arrowhead=1
+    )
+    # Add vertical line at payback point
+    fig3.add_vline(x=payback_year, line_dash="dash", 
+                  line_color="gray")
+
+fig3.update_layout(
+    hovermode="x unified",
+    plot_bgcolor='rgba(0,0,0,0)',
+    paper_bgcolor='rgba(0,0,0,0)',
+    font=dict(family="Arial", size=12),
+    yaxis_title="Euros (€)",
+    xaxis=dict(
+        tickmode='linear',
+        tick0=0,
+        dtick=1
+    ),
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    )
+)
+
+# Customize hover format
+fig3.update_traces(
+    hovertemplate="<b>Year %{x}</b><br>%{y:,.0f} €<extra></extra>"
+)
+
+st.plotly_chart(fig3, use_container_width=True)
         
         # ---- Modern Visualization 4: Surface Contribution ----
         st.subheader("PV Surface Contribution")
