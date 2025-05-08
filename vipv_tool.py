@@ -433,26 +433,39 @@ with tab2:
         
         # ---- Modern Visualization 3: Profit Timeline ----
         st.subheader("Financial Outlook")
+        
+        # Robust year calculation
+        max_years = 10
+        if not np.isinf(payback_period):
+            years = list(range(0, min(max_years, int(payback_period) + 2)))
+        else:
+            years = list(range(0, max_years))
+            
+        savings = [annual_savings * year for year in years]
+        investment = [total_cost] * len(years)
+
         profit_df = pd.DataFrame({
             'Year': years,
             'Cumulative Savings (€)': savings,
             'Investment (€)': investment
         })
-        
+
         fig3 = px.area(profit_df, x='Year', y=['Cumulative Savings (€)', 'Investment (€)'],
-                       title='<b>Investment Payback Timeline</b>',
-                       color_discrete_sequence=['#19D3F3', '#FF6692'])
-        
-        if not np.isinf(payback_period):
+                      title='<b>Investment Payback Timeline</b>',
+                      color_discrete_sequence=['#19D3F3', '#FF6692'])
+
+        if not np.isinf(payback_period) and payback_period <= max_years:
             fig3.add_vline(x=payback_period, line_dash="dash", 
-                          line_color="gray", annotation_text=f"Payback: {payback_period:.1f} years")
-        
+                          line_color="gray", annotation_text=f"Payback: {payback_period:.1f} years",
+                          annotation_position="top left")
+
         fig3.update_layout(
             hovermode="x unified",
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
             font=dict(family="Arial", size=12),
-            yaxis_title="Euros (€)"
+            yaxis_title="Euros (€)",
+            xaxis=dict(tickmode='linear', tick0=0, dtick=1)
         )
         st.plotly_chart(fig3, use_container_width=True)
         
