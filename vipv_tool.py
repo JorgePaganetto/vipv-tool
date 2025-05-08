@@ -388,32 +388,53 @@ with tab2:
             st.metric("Nissan Annual Profit", f"{nissan_profit:.1f} k€")
 
          # ---- Modern Visualization 1: Dual-Axis Energy Chart ----
-        st.subheader("Solar Performance")
+        st.subheader("Solar Energy Performance")
         fig1, ax1 = plt.subplots(figsize=(10, 5), facecolor='none')
         
-        # Convert monthly data to DataFrame for Plotly
-        monthly_df = pd.DataFrame({
-            'Month': list(monthly_energy.keys()),
-            'Irradiation': irradiation_data[region],
-            'Energy Gain': [e*1000 for e in monthly_energy.values()],
-            'WLTP Range': list(monthly_wltp_range.values()),
-            'City Range': list(monthly_city_range.values())
-        })
-        
-        # Interactive Plotly chart
-        fig_plotly = px.line(monthly_df, x='Month', y=['Irradiation', 'Energy Gain'],
-                            title='<b>Monthly Solar Performance</b>',
-                            labels={'value': 'Energy (kWh/m²/day | Wh/day)', 'variable': 'Metric'},
-                            color_discrete_sequence=['#FFA15A', '#636EFA'],
-                            template='plotly_white')
-        
-        fig_plotly.update_layout(
-            hovermode="x unified",
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(family="Arial", size=12)
-        )
-        st.plotly_chart(fig_plotly, use_container_width=True)
+        # Convert to DataFrame and adjust units
+monthly_df = pd.DataFrame({
+    'Month': list(monthly_energy.keys()),
+    'Irradiation (kWh/m²/day)': irradiation_data[region],
+    'Energy Gain (kWh/day)': [e for e in monthly_energy.values()]  # Already in kWh
+})
+
+# Create figure with secondary y-axis
+fig = px.line(monthly_df, 
+             x='Month', 
+             y=['Irradiation (kWh/m²/day)', 'Energy Gain (kWh/day)'],
+             title='<b>Monthly Solar Energy Performance</b>',
+             labels={'value': 'Energy (kWh)', 'variable': 'Metric'},
+             color_discrete_sequence=['#FFA15A', '#636EFA'],
+             template='plotly_white')
+
+# Formatting updates
+fig.update_layout(
+    hovermode="x unified",
+    plot_bgcolor='rgba(0,0,0,0)',
+    paper_bgcolor='rgba(0,0,0,0)',
+    font=dict(family="Arial", size=12),
+    yaxis=dict(
+        title='Energy (kWh)',
+        tickformat=".1f",  # Show 1 decimal place
+        range=[0, max(monthly_df['Irradiation (kWh/m²/day)'].max(), 
+                monthly_df['Energy Gain (kWh/day)'].max()) * 1.1]  # 10% padding
+    ),
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    )
+)
+
+# Customize hover data
+fig.update_traces(
+    hovertemplate="<b>%{x}</b><br>" +
+                  "%{yaxis.title.text}: %{y:.1f} kWh<extra></extra>"
+)
+
+st.plotly_chart(fig, use_container_width=True)
         
         # ---- Modern Visualization 2: Range Gain Bars ----
         st.subheader("Driving Range Enhancement")
