@@ -487,24 +487,3 @@ with tab2:
                 font=dict(family="Arial", size=12)
             )
             st.plotly_chart(fig4, use_container_width=True)
-
-# 3. Finally run this cell to launch the app
-from pyngrok import ngrok
-import subprocess
-import threading
-import time
-
-# Start Streamlit in background
-def run_streamlit():
-    subprocess.run(["streamlit", "run", "vipv_tool.py", "--server.port", "8501", "--server.headless", "true"])
-
-thread = threading.Thread(target=run_streamlit)
-thread.start()
-
-# Wait for Streamlit to start
-time.sleep(5)
-
-# Set up ngrok tunnel
-public_url = ngrok.connect(port='8501')
-print("Your Premium VIPV Tool is now available at:")
-print(public_url)
