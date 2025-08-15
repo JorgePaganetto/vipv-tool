@@ -4,6 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
 from matplotlib.ticker import MaxNLocator
+import requests
+import datetime
 
 plt.style.use('seaborn-v0_8-darkgrid')
 COLOR_PALETTE = ["#4C78A8", "#F58518", "#E45756", "#72B7B2", "#54A24B"]
@@ -35,6 +37,25 @@ energy_cost = {
     'Barcelona': 0.25, 'Berlin': 0.35, 'Cairo': 0.10, 'Delhi': 0.08, 'Dubai': 0.12,
     'London': 0.30, 'Madrid': 0.22, 'Melbourne': 0.20, 'Milan': 0.28, 'Mumbai': 0.09,
     'Paris': 0.32, 'Riyadh': 0.11, 'Rome': 0.26, 'Seville': 0.21, 'Sydney': 0.19
+}
+
+# City coordinates for Solarcast API
+city_coordinates = {
+    'Barcelona': {'lat': 41.3851, 'lon': 2.1734},
+    'Berlin': {'lat': 52.5200, 'lon': 13.4050},
+    'Cairo': {'lat': 30.0444, 'lon': 31.2357},
+    'Delhi': {'lat': 28.7041, 'lon': 77.1025},
+    'Dubai': {'lat': 25.2048, 'lon': 55.2708},
+    'London': {'lat': 51.5074, 'lon': -0.1278},
+    'Madrid': {'lat': 40.4168, 'lon': -3.7038},
+    'Melbourne': {'lat': -37.8136, 'lon': 144.9631},
+    'Milan': {'lat': 45.4642, 'lon': 9.1900},
+    'Mumbai': {'lat': 19.0760, 'lon': 72.8777},
+    'Paris': {'lat': 48.8566, 'lon': 2.3522},
+    'Riyadh': {'lat': 24.7136, 'lon': 46.6753},
+    'Rome': {'lat': 41.9028, 'lon': 12.4964},
+    'Seville': {'lat': 37.3891, 'lon': -5.9845},
+    'Sydney': {'lat': -33.8688, 'lon': 151.2093}
 }
 
 # Realistic angle data for each surface type (in degrees)
@@ -188,6 +209,40 @@ default_pv_efficiency = 25
 default_cost = 350
 default_transformation_efficiency = 90
 
+# Solarcast API functions
+def get_solarcast_forecast(api_key, latitude, longitude):
+    """Fetch solar forecast data from Solarcast API"""
+    base_url = "https://api.solarcast.io/forecast"
+    params = {
+        "lat": latitude,
+        "lon": longitude,
+        "apikey": api_key
+    }
+    
+    try:
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error fetching solar data: {e}")
+        return None
+
+def extract_forecast_days(forecast_data):
+    """Extract forecast for the next 5 days from API response"""
+    if not forecast_data or "daily" not in forecast_data:
+        return None
+    
+    today = datetime.date.today()
+    forecast_days = {}
+    
+    for i in range(6):  # Today + next 5 days
+        date_str = (today + datetime.timedelta(days=i)).isoformat()
+        if date_str in forecast_data["daily"]:
+            day_label = "Today" if i == 0 else f"Day +{i}"
+            forecast_days[day_label] = forecast_data["daily"][date_str]["solar_irradiance"]
+    
+    return forecast_days
+
 # Streamlit app
 st.set_page_config(layout="wide", page_title="VIPV Evaluation Tool")
 st.title("VIPV Evaluation Tool")
@@ -203,8 +258,53 @@ with tab1:
     with col1:
         # Region selection
         region = st.selectbox("Select Region", cities, index=cities.index('Dubai'))
+        
+        # Irradiation source selection
+        irradiation_source = st.radio("Irradiation Data Source", 
+                                    ["Monthly Average", "Real-time Forecast"], 
+                                    index=0,
+                                    help="Select between historical monthly averages or real-time solar forecasts")
+        
+        # Initialize variables
         avg_irradiation = np.mean(irradiation_data[region])
-        st.metric("Average Daily Irradiation", f"{avg_irradiation:.2f} kWh/m²/day")
+        daily_irradiation = avg_irradiation
+        forecast_data = None
+        forecast_days = None
+        selected_day = "Monthly Average"
+        
+        # Solarcast API integration
+        if irradiation_source == "Real-time Forecast":
+            api_key = st.text_input("Solarcast API Key", type="password",
+                                   help="Get your API key from solarcast.io")
+            
+            # Get coordinates for selected region
+            coords = city_coordinates.get(region)
+            if not coords:
+                st.warning(f"Coordinates not available for {region}. Using Dubai coordinates.")
+                coords = city_coordinates['Dubai']
+            
+            # Fetch forecast data
+            if api_key:
+                with st.spinner("Fetching solar forecast..."):
+                    forecast_data = get_solarcast_forecast(api_key, coords['lat'], coords['lon'])
+                
+                if forecast_data:
+                    forecast_days = extract_forecast_days(forecast_data)
+                    if forecast_days:
+                        selected_day = st.selectbox("Select Forecast Day", list(forecast_days.keys()))
+                        daily_irradiation = forecast_days[selected_day]
+                        st.metric(f"{selected_day} Irradiation", f"{daily_irradiation:.2f} kWh/m²/day")
+                    else:
+                        st.warning("Could not retrieve forecast data. Using monthly average.")
+                        st.metric("Average Daily Irradiation", f"{avg_irradiation:.2f} kWh/m²/day")
+                else:
+                    st.metric("Average Daily Irradiation", f"{avg_irradiation:.2f} kWh/m²/day")
+            else:
+                st.info("Please enter your Solarcast API key to get real-time forecasts")
+                st.metric("Average Daily Irradiation", f"{avg_irradiation:.2f} kWh/m²/day")
+        else:
+            st.metric("Average Daily Irradiation", f"{avg_irradiation:.2f} kWh/m²/day")
+            
         st.divider()
         st.metric("Default Electricity Price", f"{energy_cost[region]:.2f} €/kWh")
         electricity_price = st.slider("Adjust Electricity Price (€/kWh)",
@@ -219,7 +319,8 @@ with tab1:
             st.metric("WLTP Efficiency", f"{segment_data['wltp']} kWh/100km")
         with col2b:
             st.metric("City Efficiency", f"{segment_data['city']} kWh/100km")
-  # NEW: Nissan Business Parameters
+            
+    # NEW: Nissan Business Parameters
     st.subheader("Business Parameters")
     col3, col4 = st.columns(2)
     with col3:
@@ -292,6 +393,16 @@ with tab2:
     st.header("Premium Analysis")
     
     if st.button("Calculate Results", type="primary", use_container_width=True):
+        # Determine which irradiation data to use
+        if irradiation_source == "Real-time Forecast" and forecast_data and forecast_days:
+            # Use the selected day's irradiation for all months
+            irradiation_to_use = [daily_irradiation] * 12
+            data_source = f"Real-time Forecast ({selected_day})"
+        else:
+            # Use the monthly average data
+            irradiation_to_use = irradiation_data[region]
+            data_source = "Monthly Average"
+        
         # Calculate PV energy production for each surface
         total_area = 0
         total_daily_energy = 0
@@ -307,7 +418,7 @@ with tab2:
                 for month_idx, month in enumerate(monthly_energy.keys()):
                     # Adjust irradiation by angle (simple cosine correction)
                     angle_rad = np.radians(config['angle'])
-                    effective_irradiation = irradiation_data[region][month_idx] * np.cos(angle_rad)
+                    effective_irradiation = irradiation_to_use[month_idx] * np.cos(angle_rad)
 
                     # Calculate energy for this month
                     area = config['area'] * (config['utilization']/100)
@@ -343,7 +454,7 @@ with tab2:
 
         # Calculate average efficiency
         if total_area > 0:
-            avg_efficiency = (total_daily_energy / (total_area * avg_irradiation * (transformation_efficiency/100))) * 100
+            avg_efficiency = (total_daily_energy / (total_area * np.mean(irradiation_to_use) * (transformation_efficiency/100))) * 100
         else:
             avg_efficiency = 0
 
@@ -355,18 +466,19 @@ with tab2:
         monthly_wltp_range = {month: (energy / (segment_data['wltp'] / 100)) for month, energy in monthly_energy.items()}
         monthly_city_range = {month: (energy / (segment_data['city'] / 100)) for month, energy in monthly_energy.items()}
 
-        # Calculate annual savings and payback period (corrected calculation)
+        # Calculate annual savings and payback period
         annual_energy_kwh = sum(monthly_energy.values()) * 30.44  # Average days per month
-        annual_savings = annual_energy_kwh * energy_cost[region]  # Now in EUR
+        annual_savings = annual_energy_kwh * electricity_price  # Now in EUR
         payback_period = total_cost / annual_savings if annual_savings > 0 else float('inf')
 
-        # NEW: Calculate Nissan Annual Profit (in k€)
+        # Calculate Nissan Annual Profit (in k€)
         nissan_profit = (total_cost * (nissan_margin/100) * nissan_volume) / 1000
 
         # Display results
         st.subheader("Feasibility Study Summary")
+        st.info(f"Using irradiation data: **{data_source}**")
 
-        col1, col2, col3, col4 = st.columns(4)  # Changed to 4 columns
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Total Area", f"{total_area:.2f} m²")
             st.metric("Average Efficiency", f"{avg_efficiency:.1f}%")
@@ -381,7 +493,7 @@ with tab2:
             st.metric("Total Investment", f"{total_cost:.0f} €")
             st.metric("Annual Savings", f"{annual_savings:.0f} €")
             st.metric("Payback Period", f"{payback_period:.1f} years" if not np.isinf(payback_period) else "∞")
-        # NEW: Nissan Profit Metric
+            
         with col4:
             st.metric("Nissan Volume", f"{nissan_volume} units")
             st.metric("Nissan Margin", f"{nissan_margin}%")
@@ -393,15 +505,15 @@ with tab2:
         # Convert to DataFrame and adjust units
         monthly_df = pd.DataFrame({
             'Month': list(monthly_energy.keys()),
-            'Irradiation (kWh/m²/day)': irradiation_data[region],
-            'Energy Gain (kWh/day)': [e for e in monthly_energy.values()]  # Already in kWh
+            'Irradiation (kWh/m²/day)': irradiation_to_use,
+            'Energy Gain (kWh/day)': [e for e in monthly_energy.values()]
         })
 
         # Create figure with secondary y-axis
         fig = px.line(monthly_df, 
                     x='Month', 
                     y=['Irradiation (kWh/m²/day)', 'Energy Gain (kWh/day)'],
-                    title='<b>Monthly Solar Energy Performance</b>',
+                    title=f'<b>Monthly Solar Energy Performance ({data_source})</b>',
                     labels={'value': 'Energy (kWh)', 'variable': 'Metric'},
                     color_discrete_sequence=['#FFA15A', '#636EFA'],
                     template='plotly_white')
@@ -414,9 +526,9 @@ with tab2:
             font=dict(family="Arial", size=12),
             yaxis=dict(
                 title='Energy (kWh)',
-                tickformat=".1f",  # Show 1 decimal place
+                tickformat=".1f",
                 range=[0, max(monthly_df['Irradiation (kWh/m²/day)'].max(), 
-                        monthly_df['Energy Gain (kWh/day)'].max()) * 1.1]  # 10% padding
+                        monthly_df['Energy Gain (kWh/day)'].max()) * 1.1]
             ),
             legend=dict(
                 orientation="h",
@@ -445,7 +557,7 @@ with tab2:
         
         fig2 = px.bar(range_df, x='Month', y=['WLTP Range', 'City Range'],
                      barmode='group',
-                     title='<b>Additional Daily Driving Range</b>',
+                     title=f'<b>Additional Daily Driving Range ({data_source})</b>',
                      labels={'value': 'Kilometers', 'variable': 'Cycle'},
                      color_discrete_sequence=['#00CC96', '#AB63FA'])
         
@@ -460,8 +572,8 @@ with tab2:
                 tickformat=".1f",
                 tickmode='linear',
                 tick0=0,
-                dtick=5,  # Show ticks every 5km
-                range=[0, max_range * 1.1]  # 10% padding
+                dtick=5,
+                range=[0, max_range * 1.1]
             )
         )
         st.plotly_chart(fig2, use_container_width=True)
@@ -471,7 +583,7 @@ with tab2:
         
         # Create timeline (0 to max_years)
         max_years = 10
-        years = list(range(0, max_years + 1))  # Include year 0 to max_years
+        years = list(range(0, max_years + 1))
 
         # Cumulative savings grows each year
         savings = [annual_savings * year for year in years]
@@ -490,7 +602,7 @@ with tab2:
 
         fig3 = px.line(profit_df, x='Year', y=['Cumulative Savings (€)', 'Investment (€)'],
                       title='<b>Investment Payback Timeline</b>',
-                      color_discrete_sequence=['#19D3F3', '#FF6692'],  # Blue for savings, red for investment
+                      color_discrete_sequence=['#19D3F3', '#FF6692'],
                       markers=True)
 
         if payback_year is not None:
@@ -547,7 +659,7 @@ with tab2:
             
             fig4 = px.sunburst(contrib_df, path=['Surface'], values='Contribution (%)',
                               color='Area (m²)', color_continuous_scale='Blues',
-                              title='<b>Energy Contribution by Surface Area</b>')
+                              title=f'<b>Energy Contribution by Surface Area ({data_source})</b>')
             
             fig4.update_layout(
                 margin=dict(t=40, l=0, r=0, b=0),
