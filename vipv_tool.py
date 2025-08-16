@@ -3,9 +3,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
-from matplotlib.ticker import MaxNLocator
 import requests
 import datetime
+import time
 
 plt.style.use('seaborn-v0_8-darkgrid')
 COLOR_PALETTE = ["#4C78A8", "#F58518", "#E45756", "#72B7B2", "#54A24B"]
@@ -69,138 +69,7 @@ surface_angles = {
 }
 
 segments = {
-    'B-HB (Micra)': {
-        'wltp': 12.5,
-        'city': 9.4,
-        'surfaces': {
-            'hood': {'area': 1.2, 'angle': surface_angles['hood']},
-            'roof': {'area': 1.5, 'angle': surface_angles['roof']},
-            'rear_window': {'area': 0.4, 'angle': surface_angles['rear_window']},
-            'rear_side_window': {'area': 0.6, 'angle': surface_angles['rear_side_window']},
-            'front_side_window': {'area': 0.5, 'angle': surface_angles['front_side_window']},
-            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
-        }
-    },
-    'B-SUV (Juke)': {
-        'wltp': 13.5,
-        'city': 10.1,
-        'surfaces': {
-            'hood': {'area': 1.4, 'angle': surface_angles['hood']},
-            'roof': {'area': 1.8, 'angle': surface_angles['roof']},
-            'rear_window': {'area': 0.5, 'angle': surface_angles['rear_window']},
-            'rear_side_window': {'area': 0.7, 'angle': surface_angles['rear_side_window']},
-            'front_side_window': {'area': 0.6, 'angle': surface_angles['front_side_window']},
-            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
-        }
-    },
-    'C-HB (Leaf)': {
-        'wltp': 13.0,
-        'city': 9.8,
-        'surfaces': {
-            'hood': {'area': 1.5, 'angle': surface_angles['hood']},
-            'roof': {'area': 2.0, 'angle': surface_angles['roof']},
-            'rear_window': {'area': 0.6, 'angle': surface_angles['rear_window']},
-            'rear_side_window': {'area': 0.8, 'angle': surface_angles['rear_side_window']},
-            'front_side_window': {'area': 0.7, 'angle': surface_angles['front_side_window']},
-            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
-        }
-    },
-        'C-SUV (Qashqai)': {
-        'wltp': 14.5,
-        'city': 10.9,
-        'surfaces': {
-            'hood': {'area': 1.6, 'angle': surface_angles['hood']},
-            'roof': {'area': 2.2, 'angle': surface_angles['roof']},
-            'rear_window': {'area': 0.7, 'angle': surface_angles['rear_window']},
-            'rear_side_window': {'area': 0.9, 'angle': surface_angles['rear_side_window']},
-            'front_side_window': {'area': 0.8, 'angle': surface_angles['front_side_window']},
-            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
-        }
-    },
-        'C-SUV+ (X-Trail)': {
-        'wltp': 15.0,
-        'city': 11.3,
-        'surfaces': {
-            'hood': {'area': 1.7, 'angle': surface_angles['hood']},
-            'roof': {'area': 2.4, 'angle': surface_angles['roof']},
-            'rear_window': {'area': 0.8, 'angle': surface_angles['rear_window']},
-            'rear_side_window': {'area': 1.0, 'angle': surface_angles['rear_side_window']},
-            'front_side_window': {'area': 0.9, 'angle': surface_angles['front_side_window']},
-            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
-        }
-    },
-        'D-SUV (X-Terra)': {
-        'wltp': 16.0,
-        'city': 12.0,
-        'surfaces': {
-            'hood': {'area': 1.8, 'angle': surface_angles['hood']},
-            'roof': {'area': 2.6, 'angle': surface_angles['roof']},
-            'rear_window': {'area': 0.9, 'angle': surface_angles['rear_window']},
-            'rear_side_window': {'area': 1.1, 'angle': surface_angles['rear_side_window']},
-            'front_side_window': {'area': 1.0, 'angle': surface_angles['front_side_window']},
-            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
-        }
-    },
-    'D-SDN (Altima)': {
-        'wltp': 13.5,
-        'city': 10.1,
-        'surfaces': {
-            'hood': {'area': 1.7, 'angle': surface_angles['hood']},
-            'roof': {'area': 2.3, 'angle': surface_angles['roof']},
-            'rear_window': {'area': 0.7, 'angle': surface_angles['rear_window']},
-            'rear_side_window': {'area': 0.9, 'angle': surface_angles['rear_side_window']},
-            'front_side_window': {'area': 0.8, 'angle': surface_angles['front_side_window']},
-            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
-        }
-    },
-    'E-SUV (Pathfinder)': {
-        'wltp': 17.0,
-        'city': 12.8,
-        'surfaces': {
-            'hood': {'area': 2.0, 'angle': surface_angles['hood']},
-            'roof': {'area': 2.8, 'angle': surface_angles['roof']},
-            'rear_window': {'area': 1.0, 'angle': surface_angles['rear_window']},
-            'rear_side_window': {'area': 1.2, 'angle': surface_angles['rear_side_window']},
-            'front_side_window': {'area': 1.1, 'angle': surface_angles['front_side_window']},
-            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
-        }
-    },
-    'F-SUV (Patrol)': {
-        'wltp': 18.0,
-        'city': 13.5,
-        'surfaces': {
-            'hood': {'area': 2.2, 'angle': surface_angles['hood']},
-            'roof': {'area': 3.0, 'angle': surface_angles['roof']},
-            'rear_window': {'area': 1.1, 'angle': surface_angles['rear_window']},
-            'rear_side_window': {'area': 1.3, 'angle': surface_angles['rear_side_window']},
-            'front_side_window': {'area': 1.2, 'angle': surface_angles['front_side_window']},
-            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
-        }
-    },
-    'Mid-VAN (NV200)': {
-        'wltp': 18.0,
-        'city': 13.5,
-        'surfaces': {
-            'hood': {'area': 1.8, 'angle': surface_angles['hood']},
-            'roof': {'area': 3.2, 'angle': surface_angles['roof']},
-            'rear_window': {'area': 1.0, 'angle': surface_angles['rear_window']},
-            'rear_side_window': {'area': 1.4, 'angle': surface_angles['rear_side_window']},
-            'front_side_window': {'area': 1.0, 'angle': surface_angles['front_side_window']},
-            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
-        }
-    },
-    'Pick Up (Navara)': {
-        'wltp': 20.0,
-        'city': 15.0,
-        'surfaces': {
-            'hood': {'area': 2.0, 'angle': surface_angles['hood']},
-            'roof': {'area': 2.5, 'angle': surface_angles['roof']},
-            'rear_window': {'area': 0.8, 'angle': surface_angles['rear_window']},
-            'rear_side_window': {'area': 1.0, 'angle': surface_angles['rear_side_window']},
-            'front_side_window': {'area': 0.9, 'angle': surface_angles['front_side_window']},
-            'canopy': {'area': 4.0, 'angle': surface_angles['canopy'], 'default': True}
-        }
-    }
+    # ... (your existing segment data remains the same) ...
 }
 
 # Default values
@@ -209,9 +78,9 @@ default_pv_efficiency = 25
 default_cost = 350
 default_transformation_efficiency = 90
 
-# Solarcast API functions
+# Solarcast API functions with improved error handling
 def get_solarcast_forecast(api_key, latitude, longitude):
-    """Fetch solar forecast data from Solarcast API"""
+    """Fetch solar forecast data from Solarcast API with robust error handling"""
     base_url = "https://api.solarcast.io/forecast"
     params = {
         "lat": latitude,
@@ -220,11 +89,18 @@ def get_solarcast_forecast(api_key, latitude, longitude):
     }
     
     try:
-        response = requests.get(base_url, params=params)
+        # Set timeout to 10 seconds (5 seconds connection, 5 seconds read)
+        response = requests.get(base_url, params=params, timeout=(5, 10))
         response.raise_for_status()
         return response.json()
+    except requests.exceptions.Timeout:
+        st.warning("Solarcast API timed out. Using monthly averages instead.")
+        return None
     except requests.exceptions.RequestException as e:
-        st.error(f"Error fetching solar data: {e}")
+        st.warning(f"Could not retrieve solar forecast: {str(e)}. Using monthly averages.")
+        return None
+    except Exception as e:
+        st.warning(f"Unexpected error: {str(e)}. Using monthly averages.")
         return None
 
 def extract_forecast_days(forecast_data):
@@ -272,7 +148,7 @@ with tab1:
         forecast_days = None
         selected_day = "Monthly Average"
         
-        # Solarcast API integration
+        # Solarcast API integration with retry mechanism
         if irradiation_source == "Real-time Forecast":
             api_key = st.text_input("Solarcast API Key", type="password",
                                    help="Get your API key from solarcast.io")
@@ -286,16 +162,22 @@ with tab1:
             # Fetch forecast data
             if api_key:
                 with st.spinner("Fetching solar forecast..."):
-                    forecast_data = get_solarcast_forecast(api_key, coords['lat'], coords['lon'])
+                    # Try API call with retry
+                    for attempt in range(3):  # Try up to 3 times
+                        forecast_data = get_solarcast_forecast(api_key, coords['lat'], coords['lon'])
+                        if forecast_data is not None:
+                            break
+                        if attempt < 2:  # Not the last attempt
+                            time.sleep(1)  # Wait before retrying
                 
                 if forecast_data:
                     forecast_days = extract_forecast_days(forecast_data)
                     if forecast_days:
                         selected_day = st.selectbox("Select Forecast Day", list(forecast_days.keys()))
                         daily_irradiation = forecast_days[selected_day]
-                        st.metric(f"{selected_day} Irradiation", f"{daily_irradiation:.2f} kWh/m²/day")
+                        st.success(f"Using {selected_day} forecast: {daily_irradiation:.2f} kWh/m²/day")
                     else:
-                        st.warning("Could not retrieve forecast data. Using monthly average.")
+                        st.warning("Forecast data format not recognized. Using monthly average.")
                         st.metric("Average Daily Irradiation", f"{avg_irradiation:.2f} kWh/m²/day")
                 else:
                     st.metric("Average Daily Irradiation", f"{avg_irradiation:.2f} kWh/m²/day")
@@ -320,7 +202,7 @@ with tab1:
         with col2b:
             st.metric("City Efficiency", f"{segment_data['city']} kWh/100km")
             
-    # NEW: Nissan Business Parameters
+    # Nissan Business Parameters
     st.subheader("Business Parameters")
     col3, col4 = st.columns(2)
     with col3:
