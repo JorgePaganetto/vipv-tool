@@ -68,8 +68,140 @@ surface_angles = {
     'canopy': 0     # Canopies are typically flat
 }
 
+# RESTORED FULL SEGMENTS DICTIONARY
 segments = {
-    # ... (your existing segment data remains the same) ...
+    'B-HB (Micra)': {
+        'wltp': 12.5,
+        'city': 9.4,
+        'surfaces': {
+            'hood': {'area': 1.2, 'angle': surface_angles['hood']},
+            'roof': {'area': 1.5, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 0.4, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 0.6, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 0.5, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+    'B-SUV (Juke)': {
+        'wltp': 13.5,
+        'city': 10.1,
+        'surfaces': {
+            'hood': {'area': 1.4, 'angle': surface_angles['hood']},
+            'roof': {'area': 1.8, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 0.5, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 0.7, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 0.6, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+    'C-HB (Leaf)': {
+        'wltp': 13.0,
+        'city': 9.8,
+        'surfaces': {
+            'hood': {'area': 1.5, 'angle': surface_angles['hood']},
+            'roof': {'area': 2.0, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 0.6, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 0.8, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 0.7, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+    'C-SUV (Qashqai)': {
+        'wltp': 14.5,
+        'city': 10.9,
+        'surfaces': {
+            'hood': {'area': 1.6, 'angle': surface_angles['hood']},
+            'roof': {'area': 2.2, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 0.7, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 0.9, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 0.8, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+    'C-SUV+ (X-Trail)': {
+        'wltp': 15.0,
+        'city': 11.3,
+        'surfaces': {
+            'hood': {'area': 1.7, 'angle': surface_angles['hood']},
+            'roof': {'area': 2.4, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 0.8, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 1.0, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 0.9, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+    'D-SUV (X-Terra)': {
+        'wltp': 16.0,
+        'city': 12.0,
+        'surfaces': {
+            'hood': {'area': 1.8, 'angle': surface_angles['hood']},
+            'roof': {'area': 2.6, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 0.9, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 1.1, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 1.0, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+    'D-SDN (Altima)': {
+        'wltp': 13.5,
+        'city': 10.1,
+        'surfaces': {
+            'hood': {'area': 1.7, 'angle': surface_angles['hood']},
+            'roof': {'area': 2.3, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 0.7, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 0.9, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 0.8, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+    'E-SUV (Pathfinder)': {
+        'wltp': 17.0,
+        'city': 12.8,
+        'surfaces': {
+            'hood': {'area': 2.0, 'angle': surface_angles['hood']},
+            'roof': {'area': 2.8, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 1.0, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 1.2, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 1.1, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+    'F-SUV (Patrol)': {
+        'wltp': 18.0,
+        'city': 13.5,
+        'surfaces': {
+            'hood': {'area': 2.2, 'angle': surface_angles['hood']},
+            'roof': {'area': 3.0, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 1.1, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 1.3, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 1.2, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+    'Mid-VAN (NV200)': {
+        'wltp': 18.0,
+        'city': 13.5,
+        'surfaces': {
+            'hood': {'area': 1.8, 'angle': surface_angles['hood']},
+            'roof': {'area': 3.2, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 1.0, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 1.4, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 1.0, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
+        }
+    },
+    'Pick Up (Navara)': {
+        'wltp': 20.0,
+        'city': 15.0,
+        'surfaces': {
+            'hood': {'area': 2.0, 'angle': surface_angles['hood']},
+            'roof': {'area': 2.5, 'angle': surface_angles['roof']},
+            'rear_window': {'area': 0.8, 'angle': surface_angles['rear_window']},
+            'rear_side_window': {'area': 1.0, 'angle': surface_angles['rear_side_window']},
+            'front_side_window': {'area': 0.9, 'angle': surface_angles['front_side_window']},
+            'canopy': {'area': 4.0, 'angle': surface_angles['canopy'], 'default': True}
+        }
+    }
 }
 
 # Default values
@@ -195,7 +327,7 @@ with tab1:
     with col2:
         # Segment selection
         segment = st.selectbox("Select Segment", list(segments.keys()))
-        segment_data = segments[segment]
+        segment_data = segments[segment]  # This line had the KeyError in the previous version
         col2a, col2b = st.columns(2)
         with col2a:
             st.metric("WLTP Efficiency", f"{segment_data['wltp']} kWh/100km")
