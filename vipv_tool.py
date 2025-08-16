@@ -6,6 +6,7 @@ import plotly.express as px
 import requests
 import datetime
 import time
+from bs4 import BeautifulSoup
 
 plt.style.use('seaborn-v0_8-darkgrid')
 COLOR_PALETTE = ["#4C78A8", "#F58518", "#E45756", "#72B7B2", "#54A24B"]
@@ -56,6 +57,13 @@ city_coordinates = {
     'Rome': {'lat': 41.9028, 'lon': 12.4964},
     'Seville': {'lat': 37.3891, 'lon': -5.9845},
     'Sydney': {'lat': -33.8688, 'lon': 151.2093}
+}
+
+# Tutiempo.net URLs for Spanish cities
+tutiempo_urls = {
+    'Barcelona': 'https://www.tutiempo.net/radiacion-solar/barcelona.html',
+    'Madrid': 'https://www.tutiempo.net/radiacion-solar/madrid.html',
+    'Seville': 'https://www.tutiempo.net/radiacion-solar/sevilla.html'
 }
 
 # Realistic angle data for each surface type (in degrees)
@@ -113,7 +121,7 @@ segments = {
             'hood': {'area': 1.6, 'angle': surface_angles['hood']},
             'roof': {'area': 2.2, 'angle': surface_angles['roof']},
             'rear_window': {'area': 0.7, 'angle': surface_angles['rear_window']},
-            'rear_side_window': {'area': 0.9, 'angle': surface_angles['rear_side_window']},
+            'rearside_window': {'area': 0.9, 'angle': surface_angles['rear_side_window']},
             'front_side_window': {'area': 0.8, 'angle': surface_angles['front_side_window']},
             'canopy': {'area': 0, 'angle': surface_angles['canopy'], 'default': False}
         }
@@ -210,7 +218,7 @@ default_pv_efficiency = 25
 default_cost = 350
 default_transformation_efficiency = 90
 
-# Solarcast API functions with robust error handling and retry mechanism
+# Solarcast API functions with robust error handling
 def get_solarcast_forecast(api_key, latitude, longitude):
     """Fetch solar forecast data from Solarcast API with robust error handling"""
     base_url = "https://api.solarcast.io/forecast"
@@ -251,6 +259,57 @@ def extract_forecast_days(forecast_data):
     
     return forecast_days
 
+# Tutiempo.net web scraping for Spanish cities
+def get_tutiempo_forecast(city):
+    """Get solar irradiation forecast from Tutiempo.net for Spanish cities"""
+    try:
+        url = tutiempo_urls.get(city)
+        if not url:
+            return None
+            
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Find the table with forecast data
+        table = soup.find('table', class_='medias')
+        if not table:
+            return None
+            
+        # Extract the next 15 days of solar irradiation
+        forecast = {}
+        rows = table.find_all('tr')[1:16]  # Next 15 days
+        
+        today = datetime.date.today()
+        for i, row in enumerate(rows):
+            cols = row.find_all('td')
+            if len(cols) >= 5:
+                # Extract solar radiation value
+                radiation = cols[4].get_text().strip()
+                try:
+                    radiation_value = float(radiation)
+                except ValueError:
+                    radiation_value = None
+                    
+                # Create day label
+                day_label = "Today" if i == 0 else f"Day +{i}"
+                forecast_date = today + datetime.timedelta(days=i)
+                
+                forecast[day_label] = {
+                    'date': forecast_date.strftime("%Y-%m-%d"),
+                    'radiation': radiation_value
+                }
+                
+        return forecast
+        
+    except Exception as e:
+        st.warning(f"Could not retrieve Tutiempo forecast: {str(e)}")
+        return None
+
 # Streamlit app
 st.set_page_config(layout="wide", page_title="VIPV Evaluation Tool")
 st.title("VIPV Evaluation Tool")
@@ -268,8 +327,14 @@ with tab1:
         region = st.selectbox("Select Region", cities, index=cities.index('Dubai'))
         
         # Irradiation source selection
+        irradiation_options = ["Monthly Average", "Solarcast API Forecast"]
+        
+        # Add Tutiempo option only for Spanish cities
+        if region in tutiempo_urls:
+            irradiation_options.append("Tutiempo 15-Day Forecast")
+            
         irradiation_source = st.radio("Irradiation Data Source", 
-                                    ["Monthly Average", "Real-time Forecast"], 
+                                    irradiation_options, 
                                     index=0,
                                     help="Select between historical monthly averages or real-time solar forecasts")
         
@@ -279,9 +344,10 @@ with tab1:
         forecast_data = None
         forecast_days = None
         selected_day = "Monthly Average"
+        data_source = "Monthly Average"
         
-        # Solarcast API integration with retry mechanism
-        if irradiation_source == "Real-time Forecast":
+        # Solarcast API integration
+        if irradiation_source == "Solarcast API Forecast":
             api_key = st.text_input("Solarcast API Key", type="password",
                                    help="Get your API key from solarcast.io")
             
@@ -308,6 +374,7 @@ with tab1:
                         selected_day = st.selectbox("Select Forecast Day", list(forecast_days.keys()))
                         daily_irradiation = forecast_days[selected_day]
                         st.success(f"Using {selected_day} forecast: {daily_irradiation:.2f} kWh/m²/day")
+                        data_source = f"Solarcast API ({selected_day})"
                     else:
                         st.warning("Forecast data format not recognized. Using monthly average.")
                         st.metric("Average Daily Irradiation", f"{avg_irradiation:.2f} kWh/m²/day")
@@ -315,6 +382,27 @@ with tab1:
                     st.metric("Average Daily Irradiation", f"{avg_irradiation:.2f} kWh/m²/day")
             else:
                 st.info("Please enter your Solarcast API key to get real-time forecasts")
+                st.metric("Average Daily Irradiation", f"{avg_irradiation:.2f} kWh/m²/day")
+        
+        # Tutiempo integration for Spanish cities
+        elif irradiation_source == "Tutiempo 15-Day Forecast":
+            with st.spinner(f"Fetching solar forecast for {region} from Tutiempo.net..."):
+                forecast_data = get_tutiempo_forecast(region)
+                
+            if forecast_data:
+                # Create list of available days with radiation values
+                available_days = [day for day, data in forecast_data.items() if data['radiation'] is not None]
+                
+                if available_days:
+                    selected_day = st.selectbox("Select Forecast Day", available_days)
+                    daily_irradiation = forecast_data[selected_day]['radiation']
+                    forecast_date = forecast_data[selected_day]['date']
+                    st.success(f"Using forecast for {forecast_date}: {daily_irradiation:.2f} kWh/m²/day")
+                    data_source = f"Tutiempo ({forecast_date})"
+                else:
+                    st.warning("No radiation data available in forecast. Using monthly average.")
+                    st.metric("Average Daily Irradiation", f"{avg_irradiation:.2f} kWh/m²/day")
+            else:
                 st.metric("Average Daily Irradiation", f"{avg_irradiation:.2f} kWh/m²/day")
         else:
             st.metric("Average Daily Irradiation", f"{avg_irradiation:.2f} kWh/m²/day")
@@ -408,10 +496,9 @@ with tab2:
     
     if st.button("Calculate Results", type="primary", use_container_width=True):
         # Determine which irradiation data to use
-        if irradiation_source == "Real-time Forecast" and forecast_data and forecast_days:
+        if irradiation_source in ["Solarcast API Forecast", "Tutiempo 15-Day Forecast"] and daily_irradiation:
             # Use the selected day's irradiation for all months
             irradiation_to_use = [daily_irradiation] * 12
-            data_source = f"Real-time Forecast ({selected_day})"
         else:
             # Use the monthly average data
             irradiation_to_use = irradiation_data[region]
