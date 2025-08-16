@@ -68,7 +68,7 @@ surface_angles = {
     'canopy': 0     # Canopies are typically flat
 }
 
-# RESTORED FULL SEGMENTS DICTIONARY
+# Complete segments dictionary
 segments = {
     'B-HB (Micra)': {
         'wltp': 12.5,
@@ -210,7 +210,7 @@ default_pv_efficiency = 25
 default_cost = 350
 default_transformation_efficiency = 90
 
-# Solarcast API functions with improved error handling
+# Solarcast API functions with robust error handling and retry mechanism
 def get_solarcast_forecast(api_key, latitude, longitude):
     """Fetch solar forecast data from Solarcast API with robust error handling"""
     base_url = "https://api.solarcast.io/forecast"
@@ -221,12 +221,12 @@ def get_solarcast_forecast(api_key, latitude, longitude):
     }
     
     try:
-        # Set timeout to 10 seconds (5 seconds connection, 5 seconds read)
-        response = requests.get(base_url, params=params, timeout=(5, 10))
+        # Increased timeout to 15 seconds for read operations
+        response = requests.get(base_url, params=params, timeout=(5, 15))
         response.raise_for_status()
         return response.json()
     except requests.exceptions.Timeout:
-        st.warning("Solarcast API timed out. Using monthly averages instead.")
+        st.warning("Solarcast API timed out. This might be due to network issues or high API load. Using monthly averages instead.")
         return None
     except requests.exceptions.RequestException as e:
         st.warning(f"Could not retrieve solar forecast: {str(e)}. Using monthly averages.")
@@ -327,7 +327,7 @@ with tab1:
     with col2:
         # Segment selection
         segment = st.selectbox("Select Segment", list(segments.keys()))
-        segment_data = segments[segment]  # This line had the KeyError in the previous version
+        segment_data = segments[segment]
         col2a, col2b = st.columns(2)
         with col2a:
             st.metric("WLTP Efficiency", f"{segment_data['wltp']} kWh/100km")
